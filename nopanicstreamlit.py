@@ -1,15 +1,45 @@
 import streamlit as st
 import pandas as pd
 import joblib
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
 
 # Your Published Google Sheet CSV Link (CSV format)
 SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRzXBG0e1DxhFgwu2nrGpq9A2rQXQAVlAtynFhfRvpnRvZDAK5CPn5r2DywtggJFbP8JgDBkq06FZZt/pub?output=csv"
+
+def send_email_alert():
+    sender_email = "karthayani2210333@ssn.edu.in"
+    app_password = "ssn2210333"  # Use Gmail App Password
+    receiver_email = "gracia2210343@ssn.edu.in"
+
+    subject = " Panic Alert - GSR Dashboard"
+    body = "Immediate attention needed!\n\nA panic status has been detected in the latest GSR sensor reading."
+
+    msg = MIMEMultipart()
+    msg["From"] = sender_email
+    msg["To"] = receiver_email
+    msg["Subject"] = subject
+
+    msg.attach(MIMEText(body, "plain"))
+
+    try:
+        with smtplib.SMTP("smtp.gmail.com", 587) as server:
+            server.starttls()
+            server.login(sender_email, app_password)
+            server.send_message(msg)
+            st.info("📧 Email alert sent successfully.")
+    except Exception as e:
+        st.error(f"Failed to send email: {e}")
 
 def main():
     st.set_page_config("GSR Sensor Dashboard", layout="wide")
 
     if "logged_in" not in st.session_state:
         st.session_state.logged_in = False
+
+    if "email_sent" not in st.session_state:
+        st.session_state.email_sent = False
 
     # Login
     if not st.session_state.logged_in:
@@ -60,14 +90,18 @@ def main():
     col3.metric("Temperature", f'{latest["Temperature"]:.2f} °C')
     col4.metric("Status", latest["Status"])
 
-    # Display Alert
+    # Display Alert and Send Email
     if latest["Status"] == "Panic":
-        st.error(" ALERT: Panic detected in the latest reading!")
-        st.markdown("####  **Immediate action required!**")
+        st.error("🚨 ALERT: Panic detected in the latest reading!")
+        st.markdown("#### **Immediate action required!**")
+        if not st.session_state.email_sent:
+            send_email_alert()
+            st.session_state.email_sent = True
     elif latest["Status"] == "Normal":
         st.success("Status: Normal")
+        st.session_state.email_sent = False  # Reset for next alert
     else:
-        st.warning(" Status Unknown")
+        st.warning("Status Unknown")
 
     st.markdown("---")
     st.subheader("Trend Graphs")
