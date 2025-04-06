@@ -13,7 +13,7 @@ def send_email_alert():
     app_password = "ssn2210333"  # Use Gmail App Password
     receiver_email = "gracia2210343@ssn.edu.in"
 
-    subject = " Panic Alert - GSR Dashboard"
+    subject = " Panic Alert - Sensors Dashboard"
     body = "Immediate attention needed!\n\nA panic status has been detected in the latest GSR sensor reading."
 
     msg = MIMEMultipart()
