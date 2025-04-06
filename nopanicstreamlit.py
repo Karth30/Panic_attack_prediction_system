@@ -28,7 +28,7 @@ def send_email_alert():
             server.starttls()
             server.login(sender_email, app_password)
             server.send_message(msg)
-            st.info("📧 Email alert sent successfully.")
+            st.info(" Email alert sent successfully.")
     except Exception as e:
         st.error(f"Failed to send email: {e}")
 
