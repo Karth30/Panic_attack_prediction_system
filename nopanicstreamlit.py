@@ -60,3 +60,11 @@ def main():
 
 if __name__ == "__main__":
     main()
+import joblib
+
+# Inside your Streamlit dashboard, after loading df
+model = joblib.load("panic_model.pkl")
+
+X_live = df[["Raw Value", "GSR Voltage", "Temperature"]]
+df["Panic"] = model.predict(X_live)
+df["Status"] = df["Panic"].map({1: "Panic", 0: "Normal"})
