@@ -61,10 +61,20 @@ def main():
 if __name__ == "__main__":
     main()
 import joblib
+import joblib
+df = get_sheet_data(SHEET_CSV_URL)
 
-# Inside your Streamlit dashboard, after loading df
+# -- Ensure the required columns exist --
+if not all(col in df.columns for col in ["Raw Value", "GSR Voltage", "Temperature"]):
+    st.error("Required columns not found in the sheet.")
+    return
+
+# -- Load the model --
 model = joblib.load("panic_model.pkl")
 
+# -- Predict panic status --
 X_live = df[["Raw Value", "GSR Voltage", "Temperature"]]
-df["Panic"] = model.predict(X_live)
-df["Status"] = df["Panic"].map({1: "Panic", 0: "Normal"})
+preds = model.predict(X_live)
+
+# -- Add prediction to DataFrame --
+df["Status"] = ["Panic" if p == 1 else "Normal" for p in preds]
