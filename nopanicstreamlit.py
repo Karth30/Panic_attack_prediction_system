@@ -2,7 +2,7 @@ import streamlit as st
 import pandas as pd
 import joblib
 
-# Your Published Google Sheet CSV Link
+# Your Published Google Sheet CSV Link (CSV format)
 SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRzXBG0e1DxhFgwu2nrGpq9A2rQXQAVlAtynFhfRvpnRvZDAK5CPn5r2DywtggJFbP8JgDBkq06FZZt/pub?output=csv"
 
 def main():
@@ -27,6 +27,7 @@ def main():
     # Dashboard
     st.title("GSR Sensor Dashboard")
 
+    # Load data from Google Sheets
     try:
         df = pd.read_csv(SHEET_CSV_URL)
     except Exception as e:
@@ -40,9 +41,9 @@ def main():
     df["Timestamp"] = pd.to_datetime(df["Timestamp"])
     df = df.sort_values("Timestamp")
 
-    # -- ML Prediction --
+    # ML Prediction
     try:
-        model = joblib.load("panic_model.pkl")  # Ensure this file exists in the same directory
+        model = joblib.load("panic_model.pkl")  # Your trained model
         X_live = df[["Raw Value", "GSR Voltage", "Temperature"]]
         preds = model.predict(X_live)
         df["Status"] = ["Panic" if p == 1 else "Normal" for p in preds]
@@ -58,6 +59,15 @@ def main():
     col2.metric("GSR Voltage", f'{latest["GSR Voltage"]:.4f} V')
     col3.metric("Temperature", f'{latest["Temperature"]:.2f} °C')
     col4.metric("Status", latest["Status"])
+
+    # Display Alert
+    if latest["Status"] == "Panic":
+        st.error(" ALERT: Panic detected in the latest reading!")
+        st.markdown("####  **Immediate action required!**")
+    elif latest["Status"] == "Normal":
+        st.success("Status: Normal")
+    else:
+        st.warning(" Status Unknown")
 
     st.markdown("---")
     st.subheader("Trend Graphs")
