@@ -8,7 +8,7 @@ from geopy.distance import geodesic
 
 # ---------- Constants ----------
 SENSOR_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRzXBG0e1DxhFgwu2nrGpq9A2rQXQAVlAtynFhfRvpnRvZDAK5CPn5r2DywtggJFbP8JgDBkq06FZZt/pub?output=csv"
-LOCATION_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR2z1RuPB0h2Qb3csY1ZwE4w-VVTrdrVylCC04wE4sXLcbOaZaAqBzX6ZBvRQIynsztDuVnEJz5GlNZ/pub?output=csv"
+LOCATION_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRIIqsqYTbIGAYoplhrxnS4V7zjE0-SBs1rNEM52eUS8RoA2EhTWHgTsfN5vQT0fQ5WiG3RVTy1uphM/pub?output=csv"
 
 SENDER_EMAIL = "karthayani2210333@ssn.edu.in"
 APP_PASSWORD = "ssn2210333"
