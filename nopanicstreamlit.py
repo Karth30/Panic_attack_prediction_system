@@ -4,19 +4,21 @@ import joblib
 import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
+from geopy.distance import geodesic
 
 # ---------- Constants ----------
-SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRzXBG0e1DxhFgwu2nrGpq9A2rQXQAVlAtynFhfRvpnRvZDAK5CPn5r2DywtggJFbP8JgDBkq06FZZt/pub?output=csv"
+SENSOR_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRzXBG0e1DxhFgwu2nrGpq9A2rQXQAVlAtynFhfRvpnRvZDAK5CPn5r2DywtggJFbP8JgDBkq06FZZt/pub?output=csv"
+LOCATION_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vR2z1RuPB0h2Qb3csY1ZwE4w-VVTrdrVylCC04wE4sXLcbOaZaAqBzX6ZBvRQIynsztDuVnEJz5GlNZ/pub?output=csv"
 
 SENDER_EMAIL = "karthayani2210333@ssn.edu.in"
-APP_PASSWORD = "ssn2210333"  # Gmail App Password
+APP_PASSWORD = "ssn2210333"
 RECEIVER_EMAIL = "gracia2210343@ssn.edu.in"
 
 def send_email_alert():
     msg = MIMEMultipart()
     msg["From"] = SENDER_EMAIL
     msg["To"] = RECEIVER_EMAIL
-    msg["Subject"] = " Panic Alert - Sensor Dashboard"
+    msg["Subject"] = "Panic Alert - Sensor Dashboard"
 
     body = """
     Immediate attention needed!
@@ -56,16 +58,16 @@ def main():
                 st.error("Incorrect credentials")
         return
 
-    # ---------- Dashboard ----------
+    # ---------- Sensor Dashboard ----------
     st.title("Sensor Monitoring Dashboard")
 
     try:
-        df = pd.read_csv(SHEET_CSV_URL)
+        df = pd.read_csv(SENSOR_CSV_URL)
     except Exception as e:
-        st.error(f"Error loading Google Sheet: {e}")
+        st.error(f"Error loading sensor sheet: {e}")
         return
 
-    required_cols = ["Timestamp", "GSR Voltage", "Temperature", "BPM", "Latitude", "Longitude"]
+    required_cols = ["Timestamp", "GSR Voltage", "Temperature", "BPM"]
     if df.empty or not all(col in df.columns for col in required_cols):
         st.warning("Sheet is empty or missing required columns.")
         return
@@ -86,29 +88,16 @@ def main():
     # ---------- Latest Reading ----------
     latest = df.iloc[-1]
     st.subheader("Latest Sensor Reading")
-    col1, col2, col3, col4, col5, col6, col7 = st.columns(7)
+    col1, col2, col3, col4, col5 = st.columns(5)
     col1.metric("Timestamp", latest["Timestamp"].strftime("%Y-%m-%d %H:%M:%S"))
     col2.metric("GSR Voltage", f'{latest["GSR Voltage"]:.4f} V')
     col3.metric("Temperature", f'{latest["Temperature"]:.2f} °C')
     col4.metric("BPM", int(latest["BPM"]))
-    col5.metric("Latitude", f'{latest["Latitude"]}')
-    col6.metric("Longitude", f'{latest["Longitude"]}')
-    col7.metric("Status", latest["Status"])
+    col5.metric("Status", latest["Status"])
 
-    # ---------- GPS Map ----------
-    st.subheader(" Device Location")
-    try:
-        gps_df = pd.DataFrame({
-            "lat": [float(latest["Latitude"])],
-            "lon": [float(latest["Longitude"])]
-        })
-        st.map(gps_df)
-    except Exception as e:
-        st.warning(f"Could not display map: {e}")
-
-    # ---------- Alert System ----------
+    # ---------- Panic Alert ----------
     if latest["Status"] == "Panic":
-        st.error(" ALERT: Panic detected!")
+        st.error("ALERT: Panic detected!")
         st.markdown("### Immediate action required!")
         if not st.session_state.email_sent:
             send_email_alert()
@@ -121,7 +110,7 @@ def main():
 
     # ---------- Graphs ----------
     st.markdown("---")
-    st.subheader(" Trend Visualizations")
+    st.subheader("Trend Visualizations")
 
     tab1, tab2, tab3, tab4 = st.tabs(["GSR Voltage", "Temperature", "BPM", "Status"])
 
@@ -136,8 +125,58 @@ def main():
 
     # ---------- Full Table ----------
     st.markdown("---")
-    st.subheader(" Historical Data")
-    st.dataframe(df[["Timestamp", "GSR Voltage", "Temperature", "BPM", "Latitude", "Longitude", "Status"]], use_container_width=True)
+    st.subheader("Historical Sensor Data")
+    st.dataframe(df[["Timestamp", "GSR Voltage", "Temperature", "BPM", "Status"]], use_container_width=True)
+
+    # ---------- GPS Location Tracking ----------
+    st.markdown("---")
+    st.subheader("GPS Location and Distance Tracking")
+
+    try:
+        gps_df = pd.read_csv(LOCATION_CSV_URL)
+        gps_df["Timestamp"] = pd.to_datetime(gps_df["Timestamp"])
+        gps_df = gps_df.sort_values("Timestamp")
+
+        # ---------- Safe Zone Settings ----------
+        st.sidebar.subheader("Safe Zone Settings")
+        safe_lat = st.sidebar.number_input("Safe Zone Latitude", value=12.753682, format="%.6f")
+        safe_lon = st.sidebar.number_input("Safe Zone Longitude", value=80.197107, format="%.6f")
+        safe_radius = st.sidebar.slider("Safe Radius (meters)", min_value=1, max_value=100, value=10)
+
+        # ---------- Safe Zone Distance ----------
+        def check_zone(row):
+            current = (row["Latitude"], row["Longitude"])
+            center = (safe_lat, safe_lon)
+            distance = geodesic(current, center).meters
+            return pd.Series({
+                "DistanceFromSafeZone": distance,
+                "ZoneStatus": "Inside" if distance <= safe_radius else "Outside"
+            })
+
+        gps_df[["DistanceFromSafeZone", "ZoneStatus"]] = gps_df.apply(check_zone, axis=1)
+
+        # ---------- Map ----------
+        st.map(gps_df.rename(columns={"Latitude": "lat", "Longitude": "lon"}))
+
+        # ---------- Distance Chart ----------
+        st.line_chart(gps_df.set_index("Timestamp")["DistanceFromSafeZone"])
+
+        # ---------- Safe Zone Alert ----------
+        latest_gps = gps_df.iloc[-1]
+        if latest_gps["ZoneStatus"] == "Outside":
+            st.error(f" OUT OF SAFE ZONE! Distance: {latest_gps['DistanceFromSafeZone']:.2f} m")
+        else:
+            st.success(f" Within Safe Zone. Distance: {latest_gps['DistanceFromSafeZone']:.2f} m")
+
+        # ---------- GPS Table ----------
+        st.subheader("Historical GPS Data")
+        st.dataframe(
+            gps_df[["Timestamp", "Latitude", "Longitude", "Distance (m)", "DistanceFromSafeZone", "ZoneStatus"]],
+            use_container_width=True
+        )
+
+    except Exception as e:
+        st.warning(f"GPS Tracking Failed: {e}")
 
 if __name__ == "__main__":
     main()
