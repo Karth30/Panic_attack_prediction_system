@@ -16,8 +16,8 @@ def send_email_alert():
     msg = MIMEMultipart()
     msg["From"] = SENDER_EMAIL
     msg["To"] = RECEIVER_EMAIL
-    msg["Subject"] = " Panic Alert - Sensor Dashboard"
-    
+    msg["Subject"] = "🚨 Panic Alert - Sensor Dashboard"
+
     body = """
     Immediate attention needed!
 
@@ -65,7 +65,7 @@ def main():
         st.error(f"Error loading Google Sheet: {e}")
         return
 
-    required_cols = ["Timestamp", "GSR Voltage", "Temperature", "BPM"]
+    required_cols = ["Timestamp", "GSR Voltage", "Temperature", "BPM", "Latitude", "Longitude"]
     if df.empty or not all(col in df.columns for col in required_cols):
         st.warning("Sheet is empty or missing required columns.")
         return
@@ -86,16 +86,29 @@ def main():
     # ---------- Latest Reading ----------
     latest = df.iloc[-1]
     st.subheader("Latest Sensor Reading")
-    col1, col2, col3, col4, col5 = st.columns(5)
+    col1, col2, col3, col4, col5, col6, col7 = st.columns(7)
     col1.metric("Timestamp", latest["Timestamp"].strftime("%Y-%m-%d %H:%M:%S"))
     col2.metric("GSR Voltage", f'{latest["GSR Voltage"]:.4f} V')
     col3.metric("Temperature", f'{latest["Temperature"]:.2f} °C')
     col4.metric("BPM", int(latest["BPM"]))
-    col5.metric("Status", latest["Status"])
+    col5.metric("Latitude", f'{latest["Latitude"]}')
+    col6.metric("Longitude", f'{latest["Longitude"]}')
+    col7.metric("Status", latest["Status"])
+
+    # ---------- GPS Map ----------
+    st.subheader(" Device Location")
+    try:
+        gps_df = pd.DataFrame({
+            "lat": [float(latest["Latitude"])],
+            "lon": [float(latest["Longitude"])]
+        })
+        st.map(gps_df)
+    except Exception as e:
+        st.warning(f"Could not display map: {e}")
 
     # ---------- Alert System ----------
     if latest["Status"] == "Panic":
-        st.error("ALERT: Panic detected!")
+        st.error(" ALERT: Panic detected!")
         st.markdown("### Immediate action required!")
         if not st.session_state.email_sent:
             send_email_alert()
@@ -108,7 +121,7 @@ def main():
 
     # ---------- Graphs ----------
     st.markdown("---")
-    st.subheader("Trend Visualizations")
+    st.subheader(" Trend Visualizations")
 
     tab1, tab2, tab3, tab4 = st.tabs(["GSR Voltage", "Temperature", "BPM", "Status"])
 
@@ -123,8 +136,8 @@ def main():
 
     # ---------- Full Table ----------
     st.markdown("---")
-    st.subheader("Historical Data")
-    st.dataframe(df[["Timestamp", "GSR Voltage", "Temperature", "BPM", "Status"]], use_container_width=True)
+    st.subheader(" Historical Data")
+    st.dataframe(df[["Timestamp", "GSR Voltage", "Temperature", "BPM", "Latitude", "Longitude", "Status"]], use_container_width=True)
 
 if __name__ == "__main__":
     main()
