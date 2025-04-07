@@ -16,7 +16,7 @@ def send_email_alert():
     msg = MIMEMultipart()
     msg["From"] = SENDER_EMAIL
     msg["To"] = RECEIVER_EMAIL
-    msg["Subject"] = "🚨 Panic Alert - Sensor Dashboard"
+    msg["Subject"] = " Panic Alert - Sensor Dashboard"
 
     body = """
     Immediate attention needed!
