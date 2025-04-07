@@ -30,9 +30,9 @@ def send_email_alert():
             server.starttls()
             server.login(SENDER_EMAIL, APP_PASSWORD)
             server.send_message(msg)
-            st.info(" Email alert sent.")
+            st.info("Email alert sent.")
     except Exception as e:
-        st.error(f" Failed to send email: {e}")
+        st.error(f"Failed to send email: {e}")
 
 def main():
     st.set_page_config("GSR Sensor Dashboard", layout="wide")
@@ -45,19 +45,19 @@ def main():
 
     # ---------- Login ----------
     if not st.session_state.logged_in:
-        st.title(" Login to Dashboard")
+        st.title("Login to Dashboard")
         username = st.text_input("Username")
         password = st.text_input("Password", type="password")
         if st.button("Login"):
             if username == "admin" and password == "1234":
                 st.session_state.logged_in = True
-                st.success("Login successful ")
+                st.success("Login successful")
             else:
-                st.error(" Incorrect credentials")
+                st.error("Incorrect credentials")
         return
 
     # ---------- Dashboard ----------
-    st.title(" Sensor Monitoring Dashboard")
+    st.title("Sensor Monitoring Dashboard")
 
     try:
         df = pd.read_csv(SHEET_CSV_URL)
@@ -65,7 +65,7 @@ def main():
         st.error(f"Error loading Google Sheet: {e}")
         return
 
-    required_cols = ["Timestamp", "Raw Value", "GSR Voltage", "Temperature"]
+    required_cols = ["Timestamp", "GSR Voltage", "Temperature", "BPM"]
     if df.empty or not all(col in df.columns for col in required_cols):
         st.warning("Sheet is empty or missing required columns.")
         return
@@ -76,7 +76,7 @@ def main():
     # ---------- ML Prediction ----------
     try:
         model = joblib.load("panic_model.pkl")
-        X_live = df[["Raw Value", "GSR Voltage", "Temperature"]]
+        X_live = df[["GSR Voltage", "Temperature", "BPM"]]
         preds = model.predict(X_live)
         df["Status"] = ["Panic" if p == 1 else "Normal" for p in preds]
     except Exception as e:
@@ -85,42 +85,46 @@ def main():
 
     # ---------- Latest Reading ----------
     latest = df.iloc[-1]
-    st.subheader(" Latest Sensor Reading")
-    col1, col2, col3, col4 = st.columns(4)
-    col1.metric("Raw Value", f'{latest["Raw Value"]:.2f}')
+    st.subheader("Latest Sensor Reading")
+    col1, col2, col3, col4, col5 = st.columns(5)
+    col1.metric("Timestamp", latest["Timestamp"].strftime("%Y-%m-%d %H:%M:%S"))
     col2.metric("GSR Voltage", f'{latest["GSR Voltage"]:.4f} V')
     col3.metric("Temperature", f'{latest["Temperature"]:.2f} °C')
-    col4.metric("Status", latest["Status"])
+    col4.metric("BPM", int(latest["BPM"]))
+    col5.metric("Status", latest["Status"])
 
     # ---------- Alert System ----------
     if latest["Status"] == "Panic":
-        st.error(" ALERT: Panic detected!")
-        st.markdown("###  Immediate action required!")
+        st.error("ALERT: Panic detected!")
+        st.markdown("### Immediate action required!")
         if not st.session_state.email_sent:
             send_email_alert()
             st.session_state.email_sent = True
     elif latest["Status"] == "Normal":
-        st.success(" Status: Normal")
+        st.success("Status: Normal")
         st.session_state.email_sent = False
     else:
         st.warning("Status Unknown")
 
     # ---------- Graphs ----------
     st.markdown("---")
-    st.subheader(" Trend Visualizations")
+    st.subheader("Trend Visualizations")
 
-    tab1, tab2, tab3 = st.tabs(["Raw Value", "GSR Voltage", "Temperature"])
+    tab1, tab2, tab3, tab4 = st.tabs(["GSR Voltage", "Temperature", "BPM", "Status"])
+
     with tab1:
-        st.line_chart(df.set_index("Timestamp")["Raw Value"])
-    with tab2:
         st.line_chart(df.set_index("Timestamp")["GSR Voltage"])
-    with tab3:
+    with tab2:
         st.line_chart(df.set_index("Timestamp")["Temperature"])
+    with tab3:
+        st.line_chart(df.set_index("Timestamp")["BPM"])
+    with tab4:
+        st.line_chart(df.set_index("Timestamp")["Status"].apply(lambda x: 1 if x == "Panic" else 0))
 
     # ---------- Full Table ----------
     st.markdown("---")
-    st.subheader(" Historical Data")
-    st.dataframe(df[["Timestamp", "GSR Voltage", "Temperature", "Status"]], use_container_width=True)
+    st.subheader("Historical Data")
+    st.dataframe(df[["Timestamp", "GSR Voltage", "Temperature", "BPM", "Status"]], use_container_width=True)
 
 if __name__ == "__main__":
     main()
