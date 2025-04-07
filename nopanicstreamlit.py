@@ -5,32 +5,34 @@ import smtplib
 from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 
-# Your Published Google Sheet CSV Link (CSV format)
+# ---------- Constants ----------
 SHEET_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRzXBG0e1DxhFgwu2nrGpq9A2rQXQAVlAtynFhfRvpnRvZDAK5CPn5r2DywtggJFbP8JgDBkq06FZZt/pub?output=csv"
 
+SENDER_EMAIL = "karthayani2210333@ssn.edu.in"
+APP_PASSWORD = "ssn2210333"  # Gmail App Password
+RECEIVER_EMAIL = "gracia2210343@ssn.edu.in"
+
 def send_email_alert():
-    sender_email = "karthayani2210333@ssn.edu.in"
-    app_password = "ssn2210333"  # Use Gmail App Password
-    receiver_email = "gracia2210343@ssn.edu.in"
-
-    subject = " Panic Alert - Sensors Dashboard"
-    body = "Immediate attention needed!\n\nA panic status has been detected in the latest GSR sensor reading."
-
     msg = MIMEMultipart()
-    msg["From"] = sender_email
-    msg["To"] = receiver_email
-    msg["Subject"] = subject
+    msg["From"] = SENDER_EMAIL
+    msg["To"] = RECEIVER_EMAIL
+    msg["Subject"] = " Panic Alert - Sensor Dashboard"
+    
+    body = """
+    Immediate attention needed!
 
+    A panic status has been detected from the sensor data. Please check the dashboard for more information.
+    """
     msg.attach(MIMEText(body, "plain"))
 
     try:
         with smtplib.SMTP("smtp.gmail.com", 587) as server:
             server.starttls()
-            server.login(sender_email, app_password)
+            server.login(SENDER_EMAIL, APP_PASSWORD)
             server.send_message(msg)
-            st.info(" Email alert sent successfully.")
+            st.info(" Email alert sent.")
     except Exception as e:
-        st.error(f"Failed to send email: {e}")
+        st.error(f" Failed to send email: {e}")
 
 def main():
     st.set_page_config("GSR Sensor Dashboard", layout="wide")
@@ -41,70 +43,71 @@ def main():
     if "email_sent" not in st.session_state:
         st.session_state.email_sent = False
 
-    # Login
+    # ---------- Login ----------
     if not st.session_state.logged_in:
-        st.title("Login")
+        st.title(" Login to Dashboard")
         username = st.text_input("Username")
         password = st.text_input("Password", type="password")
         if st.button("Login"):
             if username == "admin" and password == "1234":
                 st.session_state.logged_in = True
-                st.success("Login successful!")
+                st.success("Login successful ")
             else:
-                st.error("Incorrect credentials")
+                st.error(" Incorrect credentials")
         return
 
-    # Dashboard
-    st.title("GSR Sensor Dashboard")
+    # ---------- Dashboard ----------
+    st.title(" Sensor Monitoring Dashboard")
 
-    # Load data from Google Sheets
     try:
         df = pd.read_csv(SHEET_CSV_URL)
     except Exception as e:
-        st.error(f"Error loading data: {e}")
+        st.error(f"Error loading Google Sheet: {e}")
         return
 
-    if df.empty or not all(col in df.columns for col in ["Timestamp", "Raw Value", "GSR Voltage", "Temperature"]):
-        st.warning("Sheet is empty or missing expected columns.")
+    required_cols = ["Timestamp", "Raw Value", "GSR Voltage", "Temperature"]
+    if df.empty or not all(col in df.columns for col in required_cols):
+        st.warning("Sheet is empty or missing required columns.")
         return
 
     df["Timestamp"] = pd.to_datetime(df["Timestamp"])
     df = df.sort_values("Timestamp")
 
-    # ML Prediction
+    # ---------- ML Prediction ----------
     try:
-        model = joblib.load("panic_model.pkl")  # Your trained model
+        model = joblib.load("panic_model.pkl")
         X_live = df[["Raw Value", "GSR Voltage", "Temperature"]]
         preds = model.predict(X_live)
         df["Status"] = ["Panic" if p == 1 else "Normal" for p in preds]
     except Exception as e:
-        st.error(f"ML Prediction error: {e}")
+        st.warning(f"ML Prediction failed: {e}")
         df["Status"] = "Unknown"
 
-    # Latest Readings
+    # ---------- Latest Reading ----------
     latest = df.iloc[-1]
-    st.subheader("Latest Readings")
+    st.subheader(" Latest Sensor Reading")
     col1, col2, col3, col4 = st.columns(4)
     col1.metric("Raw Value", f'{latest["Raw Value"]:.2f}')
     col2.metric("GSR Voltage", f'{latest["GSR Voltage"]:.4f} V')
     col3.metric("Temperature", f'{latest["Temperature"]:.2f} °C')
     col4.metric("Status", latest["Status"])
 
-    # Display Alert and Send Email
+    # ---------- Alert System ----------
     if latest["Status"] == "Panic":
-        st.error("🚨 ALERT: Panic detected in the latest reading!")
-        st.markdown("#### **Immediate action required!**")
+        st.error(" ALERT: Panic detected!")
+        st.markdown("###  Immediate action required!")
         if not st.session_state.email_sent:
             send_email_alert()
             st.session_state.email_sent = True
     elif latest["Status"] == "Normal":
-        st.success("Status: Normal")
-        st.session_state.email_sent = False  # Reset for next alert
+        st.success(" Status: Normal")
+        st.session_state.email_sent = False
     else:
         st.warning("Status Unknown")
 
+    # ---------- Graphs ----------
     st.markdown("---")
-    st.subheader("Trend Graphs")
+    st.subheader(" Trend Visualizations")
 
     tab1, tab2, tab3 = st.tabs(["Raw Value", "GSR Voltage", "Temperature"])
     with tab1:
@@ -114,9 +117,10 @@ def main():
     with tab3:
         st.line_chart(df.set_index("Timestamp")["Temperature"])
 
+    # ---------- Full Table ----------
     st.markdown("---")
-    st.subheader("Prediction Table")
-    st.dataframe(df[["Timestamp", "Raw Value", "GSR Voltage", "Temperature", "Status"]])
+    st.subheader(" Historical Data")
+    st.dataframe(df[["Timestamp", "GSR Voltage", "Temperature", "Status"]], use_container_width=True)
 
 if __name__ == "__main__":
     main()
