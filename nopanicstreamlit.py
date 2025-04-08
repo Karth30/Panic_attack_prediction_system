@@ -10,35 +10,6 @@ from geopy.distance import geodesic
 SENSOR_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRzXBG0e1DxhFgwu2nrGpq9A2rQXQAVlAtynFhfRvpnRvZDAK5CPn5r2DywtggJFbP8JgDBkq06FZZt/pub?output=csv"
 LOCATION_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRIIqsqYTbIGAYoplhrxnS4V7zjE0-SBs1rNEM52eUS8RoA2EhTWHgTsfN5vQT0fQ5WiG3RVTy1uphM/pub?output=csv"
 
-SENDER_EMAIL = "karthayani2210333@ssn.edu.in"
-APP_PASSWORD = "ssn2210333"
-RECEIVER_EMAIL = "gracia2210343@ssn.edu.in"
-
-# ---------- Email Alert ----------
-def send_email_alert():
-    msg = MIMEMultipart()
-    msg["From"] = SENDER_EMAIL
-    msg["To"] = RECEIVER_EMAIL
-    msg["Subject"] = " PANIC ALERT - Sensor Dashboard"
-
-    body = """
-    Immediate attention needed!
-
-    A PANIC status has been detected from the sensor data.
-    Please check the dashboard for more information.
-    """
-    msg.attach(MIMEText(body, "plain"))
-
-    try:
-        with smtplib.SMTP("smtp.gmail.com", 587) as server:
-            server.starttls()
-            server.login(SENDER_EMAIL, APP_PASSWORD)
-            server.send_message(msg)
-            st.info(" Email alert sent.")
-    except Exception as e:
-        st.error(f"Failed to send email: {e}")
-
-# ---------- Main Dashboard ----------
 def main():
     st.set_page_config("GSR Sensor Dashboard", layout="wide")
 
