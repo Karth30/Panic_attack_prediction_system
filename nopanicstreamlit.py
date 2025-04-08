@@ -82,7 +82,7 @@ def main():
 
     # ---------- ML Prediction ----------
     try:
-        model = joblib.load("nopanic.pkl")
+        model = joblib.load("nopanicml.pkl")
         X_live = df[["GSR Voltage", "Temperature", "BPM"]]
         preds = model.predict(X_live)
 
