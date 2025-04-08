@@ -14,16 +14,18 @@ SENDER_EMAIL = "karthayani2210333@ssn.edu.in"
 APP_PASSWORD = "ssn2210333"
 RECEIVER_EMAIL = "gracia2210343@ssn.edu.in"
 
+# ---------- Email Alert ----------
 def send_email_alert():
     msg = MIMEMultipart()
     msg["From"] = SENDER_EMAIL
     msg["To"] = RECEIVER_EMAIL
-    msg["Subject"] = "Panic Alert - Sensor Dashboard"
+    msg["Subject"] = " PANIC ALERT - Sensor Dashboard"
 
     body = """
     Immediate attention needed!
 
-    A panic status has been detected from the sensor data. Please check the dashboard for more information.
+    A PANIC status has been detected from the sensor data.
+    Please check the dashboard for more information.
     """
     msg.attach(MIMEText(body, "plain"))
 
@@ -32,20 +34,19 @@ def send_email_alert():
             server.starttls()
             server.login(SENDER_EMAIL, APP_PASSWORD)
             server.send_message(msg)
-            st.info("Email alert sent.")
+            st.info(" Email alert sent.")
     except Exception as e:
         st.error(f"Failed to send email: {e}")
 
+# ---------- Main Dashboard ----------
 def main():
     st.set_page_config("GSR Sensor Dashboard", layout="wide")
 
     if "logged_in" not in st.session_state:
         st.session_state.logged_in = False
-
     if "email_sent" not in st.session_state:
         st.session_state.email_sent = False
 
-    # ---------- Login ----------
     if not st.session_state.logged_in:
         st.title("Login to Dashboard")
         username = st.text_input("Username")
@@ -58,7 +59,6 @@ def main():
                 st.error("Incorrect credentials")
         return
 
-    # ---------- Sensor Dashboard ----------
     st.title("Sensor Monitoring Dashboard")
 
     try:
@@ -77,10 +77,13 @@ def main():
 
     # ---------- ML Prediction ----------
     try:
-        model = joblib.load("panic_model.pkl")
+        model = joblib.load("nopanic.pkl")
         X_live = df[["GSR Voltage", "Temperature", "BPM"]]
         preds = model.predict(X_live)
-        df["Status"] = ["Panic" if p == 1 else "Normal" for p in preds]
+
+        # Updated label map: 0 - Normal, 1 - Low Stress, 2 - Panic
+        label_map = {0: "Normal", 1: "Low Stress", 2: "Panic"}
+        df["Status"] = [label_map.get(p, "Unknown") for p in preds]
     except Exception as e:
         st.warning(f"ML Prediction failed: {e}")
         df["Status"] = "Unknown"
@@ -97,13 +100,16 @@ def main():
 
     # ---------- Panic Alert ----------
     if latest["Status"] == "Panic":
-        st.error("ALERT: Panic detected!")
-        st.markdown("### Immediate action required!")
+        st.error(" ALERT: PANIC Detected!")
+        st.markdown("### Immediate attention required!")
         if not st.session_state.email_sent:
             send_email_alert()
             st.session_state.email_sent = True
     elif latest["Status"] == "Normal":
         st.success("Status: Normal")
+        st.session_state.email_sent = False
+    elif latest["Status"] == "Low Stress":
+        st.info("Status: Low Stress")
         st.session_state.email_sent = False
     else:
         st.warning("Status Unknown")
@@ -111,7 +117,6 @@ def main():
     # ---------- Graphs ----------
     st.markdown("---")
     st.subheader("Trend Visualizations")
-
     tab1, tab2, tab3, tab4 = st.tabs(["GSR Voltage", "Temperature", "BPM", "Status"])
 
     with tab1:
@@ -137,13 +142,11 @@ def main():
         gps_df["Timestamp"] = pd.to_datetime(gps_df["Timestamp"])
         gps_df = gps_df.sort_values("Timestamp")
 
-        # ---------- Safe Zone Settings ----------
         st.sidebar.subheader("Safe Zone Settings")
         safe_lat = st.sidebar.number_input("Safe Zone Latitude", value=12.753682, format="%.6f")
         safe_lon = st.sidebar.number_input("Safe Zone Longitude", value=80.197107, format="%.6f")
         safe_radius = st.sidebar.slider("Safe Radius (meters)", min_value=1, max_value=100, value=10)
 
-        # ---------- Safe Zone Distance ----------
         def check_zone(row):
             current = (row["Latitude"], row["Longitude"])
             center = (safe_lat, safe_lon)
@@ -155,23 +158,18 @@ def main():
 
         gps_df[["DistanceFromSafeZone", "ZoneStatus"]] = gps_df.apply(check_zone, axis=1)
 
-        # ---------- Map ----------
         st.map(gps_df.rename(columns={"Latitude": "lat", "Longitude": "lon"}))
-
-        # ---------- Distance Chart ----------
         st.line_chart(gps_df.set_index("Timestamp")["DistanceFromSafeZone"])
 
-        # ---------- Safe Zone Alert ----------
         latest_gps = gps_df.iloc[-1]
         if latest_gps["ZoneStatus"] == "Outside":
-            st.error(f" OUT OF SAFE ZONE! Distance: {latest_gps['DistanceFromSafeZone']:.2f} m")
+            st.error(f"OUT OF SAFE ZONE! Distance: {latest_gps['DistanceFromSafeZone']:.2f} m")
         else:
-            st.success(f" Within Safe Zone. Distance: {latest_gps['DistanceFromSafeZone']:.2f} m")
+            st.success(f"Within Safe Zone. Distance: {latest_gps['DistanceFromSafeZone']:.2f} m")
 
-        # ---------- GPS Table ----------
         st.subheader("Historical GPS Data")
         st.dataframe(
-            gps_df[["Timestamp", "Latitude", "Longitude", "Distance (m)", "DistanceFromSafeZone", "ZoneStatus"]],
+            gps_df[["Timestamp", "Latitude", "Longitude", "DistanceFromSafeZone", "ZoneStatus"]],
             use_container_width=True
         )
 
