@@ -1,25 +1,23 @@
 import streamlit as st
 import pandas as pd
 import joblib
-import smtplib
-from email.mime.text import MIMEText
-from email.mime.multipart import MIMEMultipart
 from geopy.distance import geodesic
 
 # ---------- Constants ----------
 SENSOR_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRzXBG0e1DxhFgwu2nrGpq9A2rQXQAVlAtynFhfRvpnRvZDAK5CPn5r2DywtggJFbP8JgDBkq06FZZt/pub?output=csv"
 LOCATION_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRIIqsqYTbIGAYoplhrxnS4V7zjE0-SBs1rNEM52eUS8RoA2EhTWHgTsfN5vQT0fQ5WiG3RVTy1uphM/pub?output=csv"
+NEW_SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTWsyEbRZehV0GLWEJ02qWaHTWBh3pqOB1Io5mNgtWSTVA1tXjOB6kDTCR9ryr7GlCbMlbN5ef2fwco/pub?output=csv"
 
 def main():
     st.set_page_config("GSR Sensor Dashboard", layout="wide")
 
     if "logged_in" not in st.session_state:
         st.session_state.logged_in = False
-    if "email_sent" not in st.session_state:
-        st.session_state.email_sent = False
+
+    st.title("Sensor Monitoring Dashboard")
 
     if not st.session_state.logged_in:
-        st.title("Login to Dashboard")
+        st.header("Login to Dashboard")
         username = st.text_input("Username")
         password = st.text_input("Password", type="password")
         if st.button("Login"):
@@ -30,17 +28,10 @@ def main():
                 st.error("Incorrect credentials")
         return
 
-    st.title("Sensor Monitoring Dashboard")
-
     try:
         df = pd.read_csv(SENSOR_CSV_URL)
-
-        # Rename datetime column for uniformity
         df.rename(columns={"datetime": "Timestamp"}, inplace=True)
-
-        # Convert to datetime object
         df["Timestamp"] = pd.to_datetime(df["Timestamp"])
-
         df = df.sort_values("Timestamp")
     except Exception as e:
         st.error(f"Error loading sensor sheet: {e}")
@@ -56,7 +47,6 @@ def main():
         model = joblib.load("nopanicml.pkl")
         X_live = df[["GSR Voltage", "Temperature", "BPM"]]
         preds = model.predict(X_live)
-
         label_map = {0: "Normal", 1: "Low Stress", 2: "Panic"}
         df["Status"] = [label_map.get(p, "Unknown") for p in preds]
     except Exception as e:
@@ -73,19 +63,14 @@ def main():
     col4.metric("BPM", int(latest["BPM"]))
     col5.metric("Status", latest["Status"])
 
-    # ---------- Panic Alert ----------
+    # ---------- ML Alert (Based on Status) ----------
     if latest["Status"] == "Panic":
-        st.error(" ALERT: PANIC Detected!")
+        st.error("ALERT: PANIC Detected!")
         st.markdown("### Immediate attention required!")
-        if not st.session_state.email_sent:
-            send_email_alert()
-            st.session_state.email_sent = True
     elif latest["Status"] == "Normal":
         st.success("Status: Normal")
-        st.session_state.email_sent = False
     elif latest["Status"] == "Low Stress":
         st.info("Status: Low Stress")
-        st.session_state.email_sent = False
     else:
         st.warning("Status Unknown")
 
@@ -150,6 +135,37 @@ def main():
 
     except Exception as e:
         st.warning(f"GPS Tracking Failed: {e}")
+
+    # ---------- New Uploaded Sheet ----------
+    st.markdown("---")
+    st.subheader("Uploaded Sheet (Status + Zone Alerts)")
+
+    try:
+        new_df = pd.read_csv(NEW_SHEET_URL)
+        new_df["Timestamp"] = pd.to_datetime(new_df["Timestamp"])
+        new_df = new_df.sort_values("Timestamp")
+        latest_new = new_df.iloc[-1]
+
+        colA, colB, colC, colD, colE, colF = st.columns(6)
+        colA.metric("Timestamp", latest_new["Timestamp"].strftime("%Y-%m-%d %H:%M:%S"))
+        colB.metric("GSR Voltage", f'{latest_new["GSR Voltage"]:.4f} V')
+        colC.metric("Temperature", f'{latest_new["Temperature"]:.2f} °C')
+        colD.metric("BPM", int(latest_new["BPM"]))
+        colE.metric("Status", latest_new["Status"])
+        colF.metric("Location", latest_new["Location Status"])
+
+        # PANIC ALERT
+        if latest_new["Status"].strip().lower() == "panic":
+            st.error("ALERT: PANIC Detected in Uploaded Sheet!")
+
+        # ZONE ALERT
+        if latest_new["Location Status"].strip().lower() == "outside":
+            st.error("ALERT: Device OUTSIDE Safe Zone (from Uploaded Sheet)!")
+
+        st.dataframe(new_df, use_container_width=True)
+
+    except Exception as e:
+        st.warning(f"Failed to load uploaded status sheet: {e}")
 
 if __name__ == "__main__":
     main()
