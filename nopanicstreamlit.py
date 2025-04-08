@@ -6,7 +6,6 @@ from geopy.distance import geodesic
 # ---------- Constants ----------
 SENSOR_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRzXBG0e1DxhFgwu2nrGpq9A2rQXQAVlAtynFhfRvpnRvZDAK5CPn5r2DywtggJFbP8JgDBkq06FZZt/pub?output=csv"
 LOCATION_CSV_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vRIIqsqYTbIGAYoplhrxnS4V7zjE0-SBs1rNEM52eUS8RoA2EhTWHgTsfN5vQT0fQ5WiG3RVTy1uphM/pub?output=csv"
-NEW_SHEET_URL = "https://docs.google.com/spreadsheets/d/e/2PACX-1vTWsyEbRZehV0GLWEJ02qWaHTWBh3pqOB1Io5mNgtWSTVA1tXjOB6kDTCR9ryr7GlCbMlbN5ef2fwco/pub?output=csv"
 
 def main():
     st.set_page_config("GSR Sensor Dashboard", layout="wide")
@@ -135,37 +134,6 @@ def main():
 
     except Exception as e:
         st.warning(f"GPS Tracking Failed: {e}")
-
-    # ---------- New Uploaded Sheet ----------
-    st.markdown("---")
-    st.subheader("Uploaded Sheet (Status + Zone Alerts)")
-
-    try:
-        new_df = pd.read_csv(NEW_SHEET_URL)
-        new_df["Timestamp"] = pd.to_datetime(new_df["Timestamp"])
-        new_df = new_df.sort_values("Timestamp")
-        latest_new = new_df.iloc[-1]
-
-        colA, colB, colC, colD, colE, colF = st.columns(6)
-        colA.metric("Timestamp", latest_new["Timestamp"].strftime("%Y-%m-%d %H:%M:%S"))
-        colB.metric("GSR Voltage", f'{latest_new["GSR Voltage"]:.4f} V')
-        colC.metric("Temperature", f'{latest_new["Temperature"]:.2f} °C')
-        colD.metric("BPM", int(latest_new["BPM"]))
-        colE.metric("Status", latest_new["Status"])
-        colF.metric("Location", latest_new["Location Status"])
-
-        # PANIC ALERT
-        if latest_new["Status"].strip().lower() == "panic":
-            st.error("ALERT: PANIC Detected in Uploaded Sheet!")
-
-        # ZONE ALERT
-        if latest_new["Location Status"].strip().lower() == "outside":
-            st.error("ALERT: Device OUTSIDE Safe Zone (from Uploaded Sheet)!")
-
-        st.dataframe(new_df, use_container_width=True)
-
-    except Exception as e:
-        st.warning(f"Failed to load uploaded status sheet: {e}")
 
 if __name__ == "__main__":
     main()
