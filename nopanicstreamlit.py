@@ -63,6 +63,14 @@ def main():
 
     try:
         df = pd.read_csv(SENSOR_CSV_URL)
+
+        # Rename datetime column for uniformity
+        df.rename(columns={"datetime": "Timestamp"}, inplace=True)
+
+        # Convert to datetime object
+        df["Timestamp"] = pd.to_datetime(df["Timestamp"])
+
+        df = df.sort_values("Timestamp")
     except Exception as e:
         st.error(f"Error loading sensor sheet: {e}")
         return
@@ -72,16 +80,12 @@ def main():
         st.warning("Sheet is empty or missing required columns.")
         return
 
-    df["Timestamp"] = pd.to_datetime(df["Timestamp"])
-    df = df.sort_values("Timestamp")
-
     # ---------- ML Prediction ----------
     try:
         model = joblib.load("nopanic.pkl")
         X_live = df[["GSR Voltage", "Temperature", "BPM"]]
         preds = model.predict(X_live)
 
-        # Updated label map: 0 - Normal, 1 - Low Stress, 2 - Panic
         label_map = {0: "Normal", 1: "Low Stress", 2: "Panic"}
         df["Status"] = [label_map.get(p, "Unknown") for p in preds]
     except Exception as e:
