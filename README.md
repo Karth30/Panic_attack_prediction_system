@@ -35,41 +35,41 @@ RESULTS:
 
 ![image](https://github.com/user-attachments/assets/4bfa0ce4-f8fd-4437-ac48-6003215a8dbc)
 
-Streamlit login page
+                               Streamlit login page
 
 ![image](https://github.com/user-attachments/assets/7203a84d-dc00-4f9d-a5d5-4b4226ebd3f4)
 
-Streamlit real-time dashboard
+                        Streamlit real-time dashboard
 
 Machine Learning Integration:
-○	A Random Forest Classifier was trained on previously labeled physiological data with three stress states: Normal, Low Stress, and Panic.
-○	The model achieved 62% accuracy on test data and was serialized using Joblib and integrated into the Streamlit app.
+      a.	A Random Forest Classifier was trained on previously labeled physiological data with three stress states: Normal, Low Stress, and Panic.
+      b. 	The model achieved 62% accuracy on test data and was serialized using Joblib and integrated into the Streamlit app.
 ![image](https://github.com/user-attachments/assets/c4e0d257-0704-4c8b-a0bf-6ff34969ddc0)
 
-Machine learning classification report
+                       Machine learning classification report
 
 ![image](https://github.com/user-attachments/assets/322dd1b0-229a-479f-a315-0f41cc9fa31a)
 
-Sample inputs and predictions
+                        Sample inputs and predictions
 
 GPS Location Monitoring:
-○	Displays a map with the user’s current location using the collected coordinates.
+	a. Displays a map with the user’s current location using the collected coordinates.
 ![image](https://github.com/user-attachments/assets/09c9a700-c9a1-41df-a5d3-6eb40e5c01e7)
-○	Computes the distance from a defined Safe Zone using the Haversine/Geodesic formula.ϕ1,ϕ2: latitudes (in radians) of point 1 and 2,Δϕ=ϕ2−ϕ1: difference in latitude, Δλ=λ2−λ1: difference in longitude, R: Radius of Earth (mean radius = 6,371 km or 6371000 meters) and d: Distance between the two points (in meters or km)
+	b. Computes the distance from a defined Safe Zone using the Haversine/Geodesic formula.ϕ1,ϕ2: latitudes (in radians) of point 1 and 2,Δϕ=ϕ2−ϕ1: difference in latitude, Δλ=λ2−λ1: difference in longitude, R: Radius of Earth (mean radius = 6,371 km or 6371000 meters) and d: Distance between the two points (in meters or km)
 Haverine/Geodesic formula used for distance computation
 ![image](https://github.com/user-attachments/assets/dc8be524-dfaf-4f45-a936-1a811a111326)
-○	Safe Zone can be set using the sidebar settings, with three inputs: Latitude, Longitude and Safe Zone Radius in meters.
+	c. Safe Zone can be set using the sidebar settings, with three inputs: Latitude, Longitude and Safe Zone Radius in meters.
 ![image](https://github.com/user-attachments/assets/591ef893-3607-471b-9943-2e3ae367c167)
-○	Visually alerts the user in the app if the device goes outside the defined safety radius (e.g., 10 meters).
+	d. Visually alerts the user in the app if the device goes outside the defined safety radius (e.g., 10 meters).
 
 Historical Data Table: Both sensor data and GPS logs are available in tabular format for analytical and debugging purposes.
 ![image](https://github.com/user-attachments/assets/67892f90-9c19-43cb-a46f-a6f0ad640f39)
 
-Historical sensor data
+                                Historical sensor data
 
 ![image](https://github.com/user-attachments/assets/b7912db5-4dc4-4a3d-a080-32d4605b7a38)
 
-Historical GPS data
+                               Historical GPS data
 
 ![image](https://github.com/user-attachments/assets/bbb3bcaa-93d4-4fad-bd1e-a3f08f0a978d)
 
