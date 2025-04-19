@@ -57,6 +57,7 @@ GPS Location Monitoring:
 ![image](https://github.com/user-attachments/assets/09c9a700-c9a1-41df-a5d3-6eb40e5c01e7)
 	b. Computes the distance from a defined Safe Zone using the Haversine/Geodesic formula.ϕ1,ϕ2: latitudes (in radians) of point 1 and 2,Δϕ=ϕ2−ϕ1: difference in latitude, Δλ=λ2−λ1: difference in longitude, R: Radius of Earth (mean radius = 6,371 km or 6371000 meters) and d: Distance between the two points (in meters or km)
 Haverine/Geodesic formula used for distance computation
+
 ![image](https://github.com/user-attachments/assets/dc8be524-dfaf-4f45-a936-1a811a111326)
 	c. Safe Zone can be set using the sidebar settings, with three inputs: Latitude, Longitude and Safe Zone Radius in meters.
 ![image](https://github.com/user-attachments/assets/591ef893-3607-471b-9943-2e3ae367c167)
