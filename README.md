@@ -30,6 +30,7 @@ The implementation successfully meets its objectives by:
 4.	Implementing geographic safety measures via the Haversine method,
 5.	And offering a secure and intuitive interface for real-time data access.
 
+
 RESULTS:
 
 ![image](https://github.com/user-attachments/assets/4bfa0ce4-f8fd-4437-ac48-6003215a8dbc)
